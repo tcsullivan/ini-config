@@ -1,3 +1,9 @@
+/**
+ * ini_config.hpp - Evaluate INI configs at compile-time for efficient use at run-time.
+ * Written by Clyne Sullivan.
+ * https://github.com/tcsullivan/ini-config
+ */
+
 #ifndef TCSULLIVAN_INI_CONFIG_HPP
 #define TCSULLIVAN_INI_CONFIG_HPP
 
