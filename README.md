@@ -4,6 +4,8 @@ A single-header library that converts INI-formatted string literals to a key-val
 
 Requires C++20. Tested to work on gcc 10.1 and clang trunk. Passes `-Wall -Wextra -pedantic`.
 
+[Try it on Godbolt.](https://godbolt.org/z/K8GGov)
+
 ## Features
  * Comments and whitespace removed during compilation
  * Handles single-line `key=value` pairs with very basic syntax error reporting
@@ -13,27 +15,28 @@ Requires C++20. Tested to work on gcc 10.1 and clang trunk. Passes `-Wall -Wextr
 
 ## How to use
 ```cpp
-// 1. Include
 #include "ini_config.hpp"
 
-// 2. Use _ini suffix
-auto config = R"ini(
+auto config = R"(
 someflag = true
 
 [Cat]
-color = grey
+color = gray
 lives = 9
-
-)ini"_ini;
-
-// ...
+)"_ini;
 
 // Returns count of key-value pairs (KVPs), 3 in this case
-config.size()
-// Iterate through all KVPs using config.begin() and config.end()
+config.size();
+// Iterate through all KVPs
 for (auto kvp : config) {}
 // Iterate through all KVPs under [Cat] section
 for (auto kvp : config.section("Cat")) {}
+// Access specific values
+config.get("someflag");     // Returns "true"
+config.get("lives");        // Searches all KVPs, returns "9"
+config["lives"];            // Same as above
+config.get("Cat", "color"); // Only searches [Cat] section, Returns "gray"
+config.get("Dog", "color"); // No match, returns ""
 ```
 See the header file for further documentation.
 
