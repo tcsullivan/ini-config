@@ -4,7 +4,7 @@ A single-header library that converts INI-formatted string literals to a key-val
 
 Requires C++20. Tested to work on gcc 10.1 and clang trunk. Passes `-Wall -Wextra -pedantic`.
 
-[Try it on Godbolt.](https://godbolt.org/z/K8GGov)
+[Try it on Godbolt.](https://godbolt.org/z/WTPzE3)
 
 ## Features
  * Comments and whitespace removed during compilation
