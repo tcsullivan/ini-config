@@ -292,7 +292,7 @@ public:
         return end();
     }
     constexpr auto end() const noexcept {
-        return iterator(kvp_buffer + sizeof(kvp_buffer) - 1);
+        return iterator(kvp_buffer + sizeof(kvp_buffer) / sizeof(char_type) - 1);
     }
     /**
      * Returns end iterator for the given section.
