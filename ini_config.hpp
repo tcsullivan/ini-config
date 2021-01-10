@@ -73,6 +73,8 @@ class ini_config
         return in + 1;
     }
 
+    // Validates INI syntax, returning the count of chars
+    // needed to store all section names, keys, and values
     consteval static unsigned int verify_and_size() {
         unsigned int sizechars = 0;
 
@@ -89,7 +91,10 @@ class ini_config
             if (*p == '[') {
                 do {
                     ++sizechars;
-                } while (*++p != ']');
+                    ++p;
+                } while (!iseol(*p) && *p != ']');
+                if (iseol(*p))
+                    throw "Bad section tag!";
                 ++sizechars; // Null terminator
                 continue;
             }
@@ -130,6 +135,7 @@ class ini_config
         return sizechars;
     }
 
+    // Counts how many key-value pairs are in the text
     consteval static unsigned int kvpcount() noexcept {
         unsigned int count = 0;
 
@@ -148,6 +154,7 @@ class ini_config
         return count;
     }
 
+    // A compact buffer for section names, keys, and values
     char_type kvp_buffer[verify_and_size() + 1] = {};
 
     consteval void fill_kvp_buffer() noexcept {
@@ -209,8 +216,7 @@ public:
         constexpr const auto& get_next() noexcept {
             if (*m_pos == '\0') {
                 // At the end
-                if (m_current.first != nullptr)
-                    m_current.first = nullptr;
+                m_current.first = nullptr;
             } else {
                 // Enter new section(s) if necessary
                 while (*m_pos == '[') {
@@ -264,6 +270,10 @@ public:
         }
     };
 
+    /**
+     * Constructs the ini_config object, populating the section/key/value
+     * buffer.
+     */
     consteval ini_config() noexcept
 #ifdef TCSULLIVAN_INI_CONFIG_CHECK_FORWARD_ITERATOR
         requires(std::forward_iterator<iterator>)
@@ -278,33 +288,42 @@ public:
     consteval auto size() const noexcept {
         return kvpcount();
     }
+
     constexpr auto begin() const noexcept {
         return iterator(kvp_buffer);
     }
-    /**
-     * Returns beginning iterator for the given section.
-     */
-    constexpr auto begin(const char_type *section) const noexcept {
-        for (auto it = begin(); it != end(); ++it) {
-            if (it->section != nullptr && stringmatch(it->section, section))
-                return it;
-        }
-        return end();
+    constexpr auto cbegin() const noexcept {
+        return begin();
     }
     constexpr auto end() const noexcept {
         return iterator(kvp_buffer + sizeof(kvp_buffer) / sizeof(char_type) - 1);
     }
+    constexpr auto cend() const noexcept {
+        return end();
+    }
+
     /**
+     * Returns beginning iterator for the given section.
+     */
+    constexpr auto begin(const char_type *section) const noexcept {
+        auto it = begin();
+        do {
+            if (it->section != nullptr && stringmatch(it->section, section))
+                break;
+        } while (++it != end());
+        return it;
+    }
+    
+    /** 
      * Returns end iterator for the given section.
      */
     constexpr auto end(const char_type *section) const noexcept {
-        for (auto it = begin(); it != end(); ++it) {
-            if (it->section != nullptr && stringmatch(it->section, section)) {
-                for (++it; it != end() && stringmatch(it->section, section); ++it);
-                return it;
-            }
+        auto it = begin(section);
+        while (++it != end()) {
+            if (!stringmatch(it->section, section))
+                break;
         }
-        return end();
+        return it;
     }
 
     class section_view {
@@ -356,6 +375,13 @@ public:
      */
     constexpr auto operator[](const char_type *key) const noexcept {
         return get(key);
+    }
+
+    constexpr bool contains(const char_type *key) const noexcept {
+        return *get(key) != '\0';
+    }
+    constexpr bool contains(const char_type *sec, const char_type *key) const noexcept {
+        return *get(sec, key) != '\0';
     }
 };
 
