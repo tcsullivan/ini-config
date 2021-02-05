@@ -14,6 +14,8 @@
 #include <iterator> // std::forward_iterator
 #endif
 
+#include <concepts> // std::integral, std::floating_point
+
 namespace ini_config {
 
 /**
@@ -71,6 +73,34 @@ class ini_config
         while (!iseol(*in))
             ++in;
         return in + 1;
+    }
+
+    template<std::integral int_type>
+    constexpr static int_type from_string(const char_type *str) noexcept {
+        int_type ret = 0;
+        bool neg = *str == '-';
+        if (neg)
+            ++str;
+        for (; *str && *str >= '0' && *str <= '9'; ++str)
+            ret = ret * 10 + (*str - '0');
+        return !neg ? ret : -ret;
+    }
+    template<std::floating_point float_type>
+    constexpr static float_type from_string(const char_type *str) noexcept {
+        float_type ret = 0;
+        bool neg = *str == '-';
+        if (neg)
+            ++str;
+        for (; *str && *str >= '0' && *str <= '9'; ++str)
+            ret = ret * 10 + (*str - '0');
+        if (*str == '.') {
+            float_type dec = 0.1;
+            for (++str; *str && *str >= '0' && *str <= '9'; ++str) {
+                ret += (*str - '0') * dec;
+                dec /= 10;
+            }
+        }
+        return !neg ? ret : -ret;
     }
 
     // Validates INI syntax, returning the count of chars
@@ -348,7 +378,7 @@ public:
     }
 
     /**
-     * Finds and returns the pair with the given key.
+     * Finds and returns the value paired with the given key.
      * Returns an empty string on failure.
      */
     constexpr auto get(const char_type *key) const noexcept {
@@ -359,7 +389,16 @@ public:
         return "";
     }
     /**
-     * Finds and returns the pair with the given key, in the given section.
+     * Finds and returns the value paired with the given key,
+     * converting it to the specified integral or floating-point type.
+     * Returns zero on failure.
+     */
+    template<typename T> requires(std::integral<T> || std::floating_point<T>)
+    constexpr T get(const char_type *key) const noexcept {
+        return from_string<T>(get(key));
+    }
+    /**
+     * Finds and returns the value paired with the given key, in the given section.
      * Returns an empty string on failure.
      */
     constexpr auto get(const char_type *sec, const char_type *key) const noexcept {
@@ -368,6 +407,15 @@ public:
                 return kvp.second;
         }
         return "";
+    }
+    /**
+     * Finds and returns the value paired with the given key in the given section,
+     * converting it to the specified integral or floating-point type.
+     * Returns zero on failure.
+     */
+    template<typename T> requires(std::integral<T> || std::floating_point<T>)
+    constexpr T get(const char_type *sec, const char_type *key) const noexcept {
+        return from_string<T>(get(sec, key));
     }
     /**
      * Array-style access to values. Searches all sections.
