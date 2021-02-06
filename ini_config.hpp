@@ -15,6 +15,7 @@
 #endif
 
 #include <concepts> // std::integral, std::floating_point
+#include <compare> // std::strong_ordering
 
 namespace ini_config {
 
@@ -292,9 +293,15 @@ public:
             get_next();
             return copy;
         }
-        // BUG: iter < end() == false at element before end()
         constexpr auto operator<=>(const iterator& other) const noexcept {
-            return m_pos <=> other.m_pos;
+            if (auto poscomp = m_pos <=> other.m_pos; poscomp != 0)
+                return poscomp;
+            if (m_current.first == nullptr)
+                return std::strong_ordering::greater;
+            else if (other.m_current.first == nullptr)
+                return std::strong_ordering::less;
+            else
+                return m_current.first <=> other.m_current.first;
         }
         constexpr bool operator==(const iterator& other) const noexcept {
             return m_pos == other.m_pos && m_current.first == other.m_current.first;
