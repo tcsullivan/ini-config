@@ -27,15 +27,15 @@ struct string_container {
     using char_type = T;
 
     char_type data[N];
-    constexpr string_container(const char_type (&s)[N]) noexcept {
+    consteval string_container(const char_type (&s)[N]) noexcept {
         auto dst = data;
         for (auto src = s; src != s + N; ++src)
             *dst++ = *src;
     }
-    constexpr operator const char_type *() const noexcept {
+    consteval operator const char_type *() const noexcept {
         return data;
     }
-    constexpr auto size() const noexcept {
+    consteval auto size() const noexcept {
         return N;
     }
     consteval auto begin() const noexcept {
@@ -76,7 +76,7 @@ class ini_config
     }
 
     template<std::integral int_type>
-    constexpr static int_type from_string(const char_type *str) noexcept {
+    consteval static int_type from_string(const char_type *str) noexcept {
         int_type ret = 0;
         bool neg = *str == '-';
         if (neg)
@@ -86,7 +86,7 @@ class ini_config
         return !neg ? ret : -ret;
     }
     template<std::floating_point float_type>
-    constexpr static float_type from_string(const char_type *str) noexcept {
+    consteval static float_type from_string(const char_type *str) noexcept {
         float_type ret = 0;
         bool neg = *str == '-';
         if (neg)
@@ -292,6 +292,7 @@ public:
             get_next();
             return copy;
         }
+        // BUG: iter < end() == false at element before end()
         constexpr auto operator<=>(const iterator& other) const noexcept {
             return m_pos <=> other.m_pos;
         }
@@ -381,7 +382,7 @@ public:
      * Finds and returns the value paired with the given key.
      * Returns an empty string on failure.
      */
-    constexpr auto get(const char_type *key) const noexcept {
+    consteval auto get(const char_type *key) const noexcept {
         for (auto kvp : *this) {
             if (stringmatch(kvp.first, key))
                 return kvp.second;
@@ -394,14 +395,14 @@ public:
      * Returns zero on failure.
      */
     template<typename T> requires(std::integral<T> || std::floating_point<T>)
-    constexpr T get(const char_type *key) const noexcept {
+    consteval T get(const char_type *key) const noexcept {
         return from_string<T>(get(key));
     }
     /**
      * Finds and returns the value paired with the given key, in the given section.
      * Returns an empty string on failure.
      */
-    constexpr auto get(const char_type *sec, const char_type *key) const noexcept {
+    consteval auto get(const char_type *sec, const char_type *key) const noexcept {
         for (auto kvp : section(sec)) {
             if (stringmatch(kvp.first, key))
                 return kvp.second;
@@ -414,21 +415,14 @@ public:
      * Returns zero on failure.
      */
     template<typename T> requires(std::integral<T> || std::floating_point<T>)
-    constexpr T get(const char_type *sec, const char_type *key) const noexcept {
+    consteval T get(const char_type *sec, const char_type *key) const noexcept {
         return from_string<T>(get(sec, key));
     }
-    /**
-     * Array-style access to values. Searches all sections.
-     * Returns an empty string on failure.
-     */
-    constexpr auto operator[](const char_type *key) const noexcept {
-        return get(key);
-    }
 
-    constexpr bool contains(const char_type *key) const noexcept {
+    consteval bool contains(const char_type *key) const noexcept {
         return *get(key) != '\0';
     }
-    constexpr bool contains(const char_type *sec, const char_type *key) const noexcept {
+    consteval bool contains(const char_type *sec, const char_type *key) const noexcept {
         return *get(sec, key) != '\0';
     }
 };
@@ -439,7 +433,7 @@ public:
  * _ini suffix definition.
  */
 template <ini_config::string_container Input>
-constexpr auto operator ""_ini()
+consteval auto operator ""_ini()
 {
     return ini_config::ini_config<Input>();
 }
