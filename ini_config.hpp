@@ -77,7 +77,7 @@ class ini_config
     }
 
     template<std::integral int_type>
-    consteval static int_type from_string(const char_type *str) noexcept {
+    constexpr static int_type from_string(const char_type *str) noexcept {
         int_type ret = 0;
         bool neg = *str == '-';
         if (neg)
@@ -87,7 +87,7 @@ class ini_config
         return !neg ? ret : -ret;
     }
     template<std::floating_point float_type>
-    consteval static float_type from_string(const char_type *str) noexcept {
+    constexpr static float_type from_string(const char_type *str) noexcept {
         float_type ret = 0;
         bool neg = *str == '-';
         if (neg)
@@ -357,10 +357,7 @@ public:
      */
     constexpr auto end(const char_type *section) const noexcept {
         auto it = begin(section);
-        while (++it != end()) {
-            if (!stringmatch(it->section, section))
-                break;
-        }
+        while (++it != end() && stringmatch(it->section, section));
         return it;
     }
 
@@ -386,8 +383,8 @@ public:
     }
 
     /**
-     * Finds and returns the value paired with the given key.
-     * Returns an empty string on failure.
+     * Returns the value for the given key as a string.
+     * Returns "" if key does not exist.
      */
     consteval auto get(const char_type *key) const noexcept {
         for (auto kvp : *this) {
@@ -397,17 +394,16 @@ public:
         return "";
     }
     /**
-     * Finds and returns the value paired with the given key,
-     * converting it to the specified integral or floating-point type.
-     * Returns zero on failure.
+     * Returns the value for the given key, converted to the given type.
+     * Returns zero if key does not exist.
      */
     template<typename T> requires(std::integral<T> || std::floating_point<T>)
     consteval T get(const char_type *key) const noexcept {
         return from_string<T>(get(key));
     }
     /**
-     * Finds and returns the value paired with the given key, in the given section.
-     * Returns an empty string on failure.
+     * Returns the value for the given key in the given section.
+     * Returns "" on failure.
      */
     consteval auto get(const char_type *sec, const char_type *key) const noexcept {
         for (auto kvp : section(sec)) {
@@ -417,8 +413,8 @@ public:
         return "";
     }
     /**
-     * Finds and returns the value paired with the given key in the given section,
-     * converting it to the specified integral or floating-point type.
+     * Returns the value for the given key in the given section,
+     * converting it to the specified type.
      * Returns zero on failure.
      */
     template<typename T> requires(std::integral<T> || std::floating_point<T>)
@@ -426,11 +422,52 @@ public:
         return from_string<T>(get(sec, key));
     }
 
+    /**
+     * Attempts to get the value for the given key.
+     */
+    auto tryget(const char_type *key) const noexcept {
+        for (auto kvp : *this) {
+            if (stringmatch(kvp.first, key))
+                return kvp.second;
+        }
+        return "";
+    }
+    /**
+     * Attempts to get the value for the given key, converted to the given type.
+     */
+    template<typename T> requires(std::integral<T> || std::floating_point<T>)
+    T tryget(const char_type *key) const noexcept {
+        return from_string<T>(tryget(key));
+    }
+    /**
+     * Attempts to get the value for the given key.
+     */
+    auto tryget(const char_type *sec, const char_type *key) const noexcept {
+        for (auto kvp : section(sec)) {
+            if (stringmatch(kvp.first, key))
+                return kvp.second;
+        }
+        return "";
+    }
+    /**
+     * Attempts to get the value for the given key, converted to the given type.
+     */
+    template<typename T> requires(std::integral<T> || std::floating_point<T>)
+    T tryget(const char_type *sec, const char_type *key) const noexcept {
+        return from_string<T>(tryget(sec, key));
+    }
+
     consteval bool contains(const char_type *key) const noexcept {
         return *get(key) != '\0';
     }
     consteval bool contains(const char_type *sec, const char_type *key) const noexcept {
         return *get(sec, key) != '\0';
+    }
+    bool trycontains(const char_type *key) const noexcept {
+        return *tryget(key) != '\0';
+    }
+    bool trycontains(const char_type *sec, const char_type *key) const noexcept {
+        return *tryget(sec, key) != '\0';
     }
 };
 
@@ -444,5 +481,10 @@ consteval auto operator ""_ini()
 {
     return ini_config::ini_config<Input>();
 }
+
+// For MSVC, the below alternative seems promising, though
+// MSVC v19.28 complains about running out of heap.
+//template <ini_config::string_container Input>
+//constexpr auto make_ini_config = ini_config::ini_config<Input>();
 
 #endif // TCSULLIVAN_INI_CONFIG_HPP
