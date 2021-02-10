@@ -5,9 +5,9 @@ A single-header library that converts INI-formatted string literals to a key-val
 Requires C++20; tested on gcc 10.1 and clang trunk. Passes `-Wall -Wextra -pedantic`.
 
 ## Features
- * Direct accesses to values are compile-time evaluated, allowing an INI config to replace a list of macros or `constexpr` globals.
+ * Direct accesses to values are compile-time evaluated, allowing an INI config to be used for project/program configuration.
  * Values can be accessed as strings, integers, or floating-point numbers.
- * Run-time support includes key lookup, iteration through the key-value list, or key existance checking; all of which can be filtered by section.
+ * Run-time support includes key lookup, iteration through the key-value list, and key existance checking; all of which can be filtered by section.
 
 [Try it on Godbolt.](https://godbolt.org/z/Ys1o9G)
 
