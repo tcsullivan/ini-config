@@ -2,14 +2,14 @@
 
 A single-header library that converts INI-formatted string literals to a key-value pair list at compile-time.
 
+Requires C++20; tested on gcc 10.1 and clang trunk. Passes `-Wall -Wextra -pedantic`.
+
 ## Features
  * Direct accesses to values are compile-time evaluated, allowing an INI config to replace a list of macros or `constexpr` globals.
  * Values can be accessed as strings, integers, or floating-point numbers.
- * Run-time support: can iterate through the key-value list or check for a key's existance, both with optional filtering by section.
+ * Run-time support includes key lookup, iteration through the key-value list, or key existance checking; all of which can be filtered by section.
 
-Requires C++20. Tested to work on gcc 10.1 and clang trunk. Passes `-Wall -Wextra -pedantic`.
-
-[Try it on Godbolt.](https://godbolt.org/z/WTPzE3)
+[Try it on Godbolt.](https://godbolt.org/z/Ys1o9G)
 
 ### INI format notes
  * Handles single-line `key=value` pairs (extra whitespace is okay)
@@ -31,6 +31,9 @@ color = gray
 lives = 9
 )"_ini;
 
+// Or, go for a more functional look:
+//constexpr auto config = make_ini_config<R"( ... )">;
+
 auto KVPcount = config.size();            // = 3
 for (auto kvp : config) {}                // Iterate through all KVPs
                                           // (or use begin()/end())
@@ -48,3 +51,4 @@ config.tryget(argv[2]);                   // Same interface and behavior as get(
 config.trycontains("color");              // Run-time evaluated to true
 ```
 See the header file for further documentation.
+

@@ -235,18 +235,20 @@ class ini_config
     }
 
 public:
+    // Stores a key-value pair, including a section identifier
     struct kvp {
         const char_type *section = nullptr;
         const char_type *first = nullptr;
         const char_type *second = nullptr;
     };
+
     class iterator {
         const char_type *m_pos = nullptr;
         kvp m_current = {};
 
         constexpr const auto& get_next() noexcept {
             if (*m_pos == '\0') {
-                // At the end
+                // Set first to nullptr to indicate that we're at the end
                 m_current.first = nullptr;
             } else {
                 // Enter new section(s) if necessary
@@ -266,7 +268,7 @@ public:
         using difference_type = long int;
         using value_type = kvp;
 
-        // Parameter is a location within kvp_buffer
+        // 'pos' is a location within kvp_buffer
         constexpr iterator(const char_type *pos) noexcept
             : m_pos(pos)
         {
@@ -330,11 +332,11 @@ public:
     constexpr auto begin() const noexcept {
         return iterator(kvp_buffer);
     }
-    constexpr auto cbegin() const noexcept {
-        return begin();
-    }
     constexpr auto end() const noexcept {
         return iterator(kvp_buffer + sizeof(kvp_buffer) / sizeof(char_type) - 1);
+    }
+    constexpr auto cbegin() const noexcept {
+        return begin();
     }
     constexpr auto cend() const noexcept {
         return end();
@@ -376,7 +378,7 @@ public:
     };
 
     /**
-     * Creates a 'view' for the given section (use with ranged for).
+     * Creates a 'view' for the given section, for use with ranged for.
      */
     constexpr auto section(const char_type *s) const noexcept {
         return section_view(*this, s);
@@ -423,7 +425,8 @@ public:
     }
 
     /**
-     * Attempts to get the value for the given key.
+     * tryget() calls are for run-time use when 'sec' or 'key'
+     * is not known at compile-time.
      */
     auto tryget(const char_type *key) const noexcept {
         for (auto kvp : *this) {
@@ -432,16 +435,10 @@ public:
         }
         return "";
     }
-    /**
-     * Attempts to get the value for the given key, converted to the given type.
-     */
     template<typename T> requires(std::integral<T> || std::floating_point<T>)
     T tryget(const char_type *key) const noexcept {
         return from_string<T>(tryget(key));
     }
-    /**
-     * Attempts to get the value for the given key.
-     */
     auto tryget(const char_type *sec, const char_type *key) const noexcept {
         for (auto kvp : section(sec)) {
             if (stringmatch(kvp.first, key))
@@ -449,9 +446,6 @@ public:
         }
         return "";
     }
-    /**
-     * Attempts to get the value for the given key, converted to the given type.
-     */
     template<typename T> requires(std::integral<T> || std::floating_point<T>)
     T tryget(const char_type *sec, const char_type *key) const noexcept {
         return from_string<T>(tryget(sec, key));
@@ -484,7 +478,8 @@ consteval auto operator ""_ini()
 
 // For MSVC, the below alternative seems promising, though
 // MSVC v19.28 complains about running out of heap.
-//template <ini_config::string_container Input>
-//constexpr auto make_ini_config = ini_config::ini_config<Input>();
+template <ini_config::string_container Input>
+constexpr auto make_ini_config = ini_config::ini_config<Input>();
 
 #endif // TCSULLIVAN_INI_CONFIG_HPP
+
